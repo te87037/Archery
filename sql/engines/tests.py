@@ -1967,7 +1967,32 @@ class MongoTest(TestCase):
                 }
             ],
         )
+    @patch('sql.engines.mongo.MongoEngine.get_roles')
+    def test_get_roles(self, MockMongoClient):
+        # Mock MongoDB return value
+        mock_db = Mock()
+        mock_db.command.return_value = {
+            'roles': [
+                {'_id': 'role1'},
+                {'_id': 'role2'},
+                {'_id': 'role3'}
+            ]
+        }
+        mock_conn = Mock()
+        mock_conn.__getitem__.return_value = mock_db
+        MockMongoClient.return_value = mock_conn
 
+        instance_config = {
+            'db_name': 'example_db',
+        }
+
+        handler = MongoDBHandler(host='localhost', port=27017, user='your_username', password='your_password', instance=instance_config)
+        
+        roles = handler.get_roles()
+        
+        # Verify that the roles list is correct
+        expected_roles = ["read", "readWrite", "userAdminAnyDatabase", 'role1', 'role2', 'role3']
+        self.assertEqual(roles, expected_roles)
 
 class TestClickHouse(TestCase):
     def setUp(self):
